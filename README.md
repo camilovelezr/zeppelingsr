@@ -2,6 +2,10 @@
 
 ## Camilo Velez
 
-
+## Installation
+---
+```
+python setup.py install
+```
 
 
