@@ -1,6 +1,6 @@
-### GSR Zeppelin Datasets for Cordra
+## GSR Zeppelin Datasets for Cordra
 
-## Camilo Velez
+### Camilo Velez
 
 ## Installation
 ```
