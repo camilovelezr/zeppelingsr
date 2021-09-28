@@ -88,7 +88,7 @@ class ZeppelinDataset:
         self.hdz = hdz
         self.pxz = f"{hdz.replace('.hdz', '.pxz')}"
         self.df = pd.read_csv(self.pxz, sep = '\t', header=None)
-        self.hdzclean = self.hdz.split('/')[-1].replace('data', 'raw').split('.')[0] # no path, no extension
+        self.hdzclean = CleanName(self.hdz) # no path, no extension
         with open(hdz, 'r', encoding = 'cp1252') as file:
             h = np.array(file.read().replace('\t \t', '\t 1\t').split())
             first = (np.where(np.array([bool(re.search(self._pp, x)) for x in h]))[0][0]+1)
