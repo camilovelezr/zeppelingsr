@@ -255,22 +255,20 @@ class Zeppelin:
         r = {'Sample Type':'GSR Sample', "Particles": self.nparticles, "CamiloExplore": 1,
             "name": f"GSR Sample {self.sample}"}
         """
-            if local != 'y': #add Nicholas as accountablePerson in sandbox
+            if local != 'y': # add Nicholas as accountablePerson in sandbox
             r.update({'accountablePerson': [CordraSession._nicholas]})
+
+            need to add this possibility
         """
-        try:
-            r.update({'accountablePerson': [CordraSession._nicholas]})
-        except:
-            pass
         response = cordra.CordraObject.create(
-            CordraSession.host,
-            r,
-            obj_type = "Material",
-            suffix = self.suffix,
-            token = CordraSession.token,
-            verify=False,
-            acls=CordraSession.acls,
-            )
+        CordraSession.host,
+        r,
+        obj_type = "Material",
+        suffix = self.suffix,
+        token = CordraSession.token,
+        verify=False,
+        acls=CordraSession.acls,
+        )
         _id = f"{CordraSession.prefix}/{self.suffix}"
         print(f"Succesfully uploaded sample with id {_id}")
         self.CordraId.sample = _id
