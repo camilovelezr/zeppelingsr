@@ -13,7 +13,7 @@ import itertools
 import re
 
 
-#dictionary to rename dataframes' columns
+# dictionary to rename dataframes' columns
 rename_columns = {"PART#": "NUMBER",
 "PARTNUM": "NUMBER",
 "FIELD#": "FIELD",
@@ -69,7 +69,7 @@ rename_columns = {"PART#": "NUMBER",
 Functions
 """
 
-def CleanName(name): #take hdz path and return clean version
+def CleanName(name): # take hdz path and return clean version
     return name.split('/')[-1].replace(" ", "_").replace("[", "_").replace("]",
                                                                            "_").replace("+",
                                                                                         "_plus_").replace('data', 'raw').split('.')[0]
@@ -77,18 +77,18 @@ def CleanName(name): #take hdz path and return clean version
 
 
 class ZeppelinDataset:
-    #RE used to search for keywords
+    # RE used to search for keywords
     _pp = re.compile('^PARTICLE_PARAMETERS=')
     _cl = re.compile('^CLASS\d{1,2}=')
     _colem = re.compile('_ELEM$')
-    #morphology parameters
+    # morphology parameters
     _morph = ["NUMBER", "XABS", "YABS", "DAVG", "DAVE", "DMIN", "DMAX", "DPERP", "PERIMETER", "ORIENTATION", "AREA"]
 
     def __init__(self, hdz):
         self.hdz = hdz
         self.pxz = f"{hdz.replace('.hdz', '.pxz')}"
         self.df = pd.read_csv(self.pxz, sep = '\t', header=None)
-        self.hdzclean = self.hdz.split('/')[-1].replace('data', 'raw').split('.')[0] #no path, no extension
+        self.hdzclean = self.hdz.split('/')[-1].replace('data', 'raw').split('.')[0] # no path, no extension
         with open(hdz, 'r', encoding = 'cp1252') as file:
             h = np.array(file.read().replace('\t \t', '\t 1\t').split())
             first = (np.where(np.array([bool(re.search(self._pp, x)) for x in h]))[0][0]+1)
@@ -96,7 +96,7 @@ class ZeppelinDataset:
             columns = h[list(c)]
             file.seek(0)
             self.meta = np.array(file.read().split('\n'))
-            t = list(itertools.takewhile(lambda x: not bool(re.search(self._pp, x)), self.meta)) #take until re match pp
+            t = list(itertools.takewhile(lambda x: not bool(re.search(self._pp, x)), self.meta)) # take until re match pp
             t.append(self.meta[len(t)])
 
         self.df.columns = columns
@@ -104,21 +104,22 @@ class ZeppelinDataset:
           (itertools.filterfalse(lambda x: not bool(self._cl.match(x)), t)))))
         self.df['PSEM_CLASS'] = (self.df['PSEM_CLASS'].apply(lambda x: str(x))).map(classes)
         self.header = dict(map(lambda x: x.split('=', 1), t)) #metadata
-        #dictionary of elements. <atomic number>:<symbol>
+        # dictionary of elements. <atomic number>:<symbol>
         element = {el.number: el.symbol for el in elements}
         element_upper = {el.number: (el.symbol).upper() for el in elements}
         el_cols = itertools.filterfalse(lambda x: not bool(self._colem.search(x)), columns)
         for x in el_cols:
             self.df[x] = self.df[x].map(element)
 
-        #Normalizing elements symbols
+        # Normalizing elements symbols
         mapper = {element_upper[n] : element[n] for n in range(119)}
         mapper2 = {'U['+element_upper[n]+']' : 'U['+element[n]+']' for n in range(119)}
-        #renaming columns dictionary
-        
+
+        # renaming columns dictionary
         self.df.rename(columns = mapper, inplace = True)
         self.df.rename(columns = mapper2, inplace = True)
         self.df.rename(columns = rename_columns, inplace = True)
+
         self.header['ANALYSIS_DATE'] = parse(self.header['ANALYSIS_DATE']).strftime('%Y-%m-%d')
         self.header['ACCELERATING_VOLTAGE'] = {'value': float(self.header['ACCELERATING_VOLTAGE'].split()[0]),
                                                'unitText':self.header['ACCELERATING_VOLTAGE'].split()[1]}
@@ -129,7 +130,7 @@ class ZeppelinDataset:
         b = pytz.timezone('EST5EDT')
         x = parse(self.header['ANALYSIS_DATE'] + ' ' +self.header['START_TIME'], tzinfos = {'EDT': b})
         self.header['DATETIME'] = x.astimezone(pytz.utc).isoformat()
-        #Mapping MAG0 and MAG_FMT as key value pairs
+        # Mapping MAG0 and MAG_FMT as key value pairs
         self.header[self.header['MAG_FMT'].split()[0].upper()+'_DATA'] = {'value': float(self.header['MAG0'].split()[0]), 'unitText': 'Assuming a 3.5 in field of view'}
 
         self.header[self.header['MAG_FMT'].split()[1].upper()] = {'value': float(self.header['MAG0'].split()[1]), 'unitText': ''}
@@ -142,12 +143,12 @@ class ZeppelinDataset:
 
         self.df.sort_values(['NUMBER'], inplace=True)
 
-    def json(self, row): #create JSON of particle
+    def json(self, row): # create JSON of particle
         r = (self.df.iloc[row-1]).to_json(orient = 'columns')
         r = json.loads(r)
         return r
 
-    def json_metadata(self, row): #create JSON of particle with metadata attached
+    def json_metadata(self, row): # create JSON of particle with metadata attached
         r = (self.df.iloc[row-1]).to_json(orient = 'columns')
         r = json.loads(r)
         f = self.header.copy()
@@ -157,7 +158,7 @@ class ZeppelinDataset:
         l = [t for t in self._morph if t in self.df.columns]
         return self.df[l]
 
-    def uploadheader(self, Zeppelin, CordraSession): #uploads metadata
+    def _uploadheader(self, Zeppelin, CordraSession): # uploads metadata
         r = self.header
         name = self.hdzclean
         r.update({"CamiloExplore": 1, "name": f"{name.capitalize()} {Zeppelin.sample}",
@@ -171,7 +172,7 @@ class ZeppelinDataset:
         verify=False,
         acls=CordraSession.acl,
         )
-    def uploadparticles(self, Zeppelin, CordraSession, maxim = None): #uploads first n particles (if no n, all)
+    def _uploadparticles(self, Zeppelin, CordraSession, maxim = None): # uploads first n particles (if no n, all)
         if maxim==None:
             num = len(Zeppelin._datahdz.df)
         else:
@@ -199,49 +200,49 @@ class ZeppelinDataset:
 
 
 class Zeppelin:
-    class CordraId: #sub-class to save Cordra Ids of uploaded objects
-        particles = dict() #initialize particle ids as a dictionary, keys will be reprocessings names
+    class CordraId: # sub-class to save Cordra Ids of uploaded objects
+        particles = dict() # initialize particle ids as a dictionary, keys will be reprocessings names
         pass
 
     def __init__(self, path):
         self.path = glob.glob(f"{path}/**/*data.hdz", recursive = True)[0].split('/data.hdz')[0]
         self.hdzs = sorted((glob.glob(f"{self.path}/*.hdz")))
         self.datasets = []
-        #initialize attributes to save possible errors and exceptions
+        # initialize attributes to save possible errors and exceptions
         self.missingpxz = []
         self.problemparticles = dict()
 
         for x in self.hdzs:
             try:
-                self.datasets.append(ZeppelinDataset(x)) #create ZeppelinDataset objects for each hdz in Zeppelin
+                self.datasets.append(ZeppelinDataset(x)) # create ZeppelinDataset objects for each hdz in Zeppelin
             except FileNotFoundError:
-                self.missingpxz.append(x) #if no PXZ found, appends to attribute missingpxz
+                self.missingpxz.append(x) # if no PXZ found, appends to attribute missingpxz
                 print(f'Could not find {x.replace(".hdz", ".pxz")}.'+
                     ' To see which hdz files are missing their respective pxz files, see missingpxz attribute.')
-        self.hdzs = list(itertools.filterfalse(lambda x: x in self.missingpxz, self.hdzs)) #remove missing pxzs from hdz list
-        self.images = sorted(glob.glob(f"{self.path}/MAG0/*.tif")) #load image file names
+        self.hdzs = list(itertools.filterfalse(lambda x: x in self.missingpxz, self.hdzs)) # remove missing pxzs from hdz list
+        self.images = sorted(glob.glob(f"{self.path}/MAG0/*.tif")) # load image file names
         def getuuid():
             return str(uuid4())[14:18]
-        self.uuid = getuuid() #get 4 characters from uuid4 string
+        self.uuid = getuuid() # get 4 characters from uuid4 string
         #while uuid in uuid_dict.values():
             #uuid = getuuid()
         def getdatahdz():
             data = np.where((map(lambda x: bool(re.search('data.hdz$', x)), self.hdzs)))[0][0]
-            setattr(self, '_datahdz', self.datasets[data]) #sets _datahdz attribute as a reference to ZeppelinDataset of data.hdz (same memory position)
-        def getyear(): #gets year from data.hdz
+            setattr(self, '_datahdz', self.datasets[data]) # sets _datahdz attribute as a reference to ZeppelinDataset of data.hdz (same memory position)
+        def getyear(): # gets year from data.hdz
             getdatahdz()
             year = parse(self._datahdz.header['ANALYSIS_DATE']).year
             setattr(self, '_year', year)
         getyear()
-        def hdznames(): #create dictionary used to generate CordraIds for metadata and particle entries
+        def hdznames(): # create dictionary used to generate CordraIds for metadata and particle entries
             t = list(map(lambda x: CleanName(x), self.hdzs))
             k = list(map(lambda x: f"gsr-{self._year}-{self.uuid}/{x}", t))
             d = dict(zip(t,k))
             setattr(self,'hdznames', d)
         hdznames()
-        self.sample = self._datahdz.header['SAMPLE'] #Name of the sample
-        self.nparticles = len(self._datahdz.df) #Number of particles in sample
-        self.suffix = f"gsr-{self._year}-{self.uuid}" #suffix used for Cordra ids
+        self.sample = self._datahdz.header['SAMPLE'] # Name of the sample
+        self.nparticles = len(self._datahdz.df) # Number of particles in sample
+        self.suffix = f"gsr-{self._year}-{self.uuid}" # suffix used for Cordra ids
 
         """""
         Initialize CordraId.particles to arrays with reprocessing names as keys
@@ -346,7 +347,7 @@ class Zeppelin:
     def upload_metadata(self, CordraSession):
         with alive_bar(len(self.datasets), title = "Uploading reprocessings metadata", bar='smooth') as bar:
             for x in self.datasets:
-                x.uploadheader(self, CordraSession)
+                x._uploadheader(self, CordraSession)
                 bar()
         self.CordraId.metadata = dict()
         for x,y in self.hdznames.items():
@@ -369,7 +370,7 @@ class Zeppelin:
             count = maxim
         with alive_bar(len(self.datasets), title = "Uploading particles", bar='smooth') as bar:
             for x in self.datasets:
-                x.uploadparticles(self, CordraSession, count)
+                x._uploadparticles(self, CordraSession, count)
                 metadata_haspart(self, CordraSession, x)
                 bar()
         print(f"Finished uploading the first {count} particles. \n")
@@ -400,15 +401,14 @@ class CordraSession:
         if prefix == None:
             prefix = input("Enter cordra's prefix: ")
         if acls:
-            acl = acls
-        def getcordrainfo(self):
+            setattr(self, 'acls', acls)
+        def _getcordrainfo(self):
             token = cordra.Token.create(host,username,password,verify=False)
             setattr(self, 'token', token)
             setattr(self, 'prefix', prefix)
             setattr(self, 'username', username)
             setattr(self, 'host', host)
-            setattr(self, 'acl', acls)
-        getcordrainfo(self)
+        _getcordrainfo(self)
     def restore_token(self):
         password = getpass.getpass("Password: ")
         token = cordra.Token.create(self.host,self.username,password,verify=False)
