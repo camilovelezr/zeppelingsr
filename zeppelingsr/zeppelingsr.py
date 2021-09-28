@@ -95,9 +95,9 @@ class ZeppelinDataset:
             c = itertools.takewhile(lambda x: x < len(h), itertools.count(first, 3))
             columns = h[list(c)]
             file.seek(0)
-            self.meta = np.array(file.read().split('\n'))
-            t = list(itertools.takewhile(lambda x: not bool(re.search(self._pp, x)), self.meta)) # take until re match pp
-            t.append(self.meta[len(t)])
+            self._meta = np.array(file.read().split('\n'))
+            t = list(itertools.takewhile(lambda x: not bool(re.search(self._pp, x)), self._meta)) # take until re match pp
+            t.append(self._meta[len(t)])
 
         self.df.columns = columns
         classes = dict((map(lambda x: x.replace('CLASS', '').split('=', 1),
