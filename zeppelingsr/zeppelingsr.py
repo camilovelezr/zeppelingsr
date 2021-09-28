@@ -170,7 +170,7 @@ class ZeppelinDataset:
         suffix = Zeppelin.hdznames[name],
         token = CordraSession.token,
         verify=False,
-        acls=CordraSession.acl,
+        acls=CordraSession.acls,
         )
     def _uploadparticles(self, Zeppelin, CordraSession, maxim = None): # uploads first n particles (if no n, all)
         if maxim==None:
@@ -191,7 +191,7 @@ class ZeppelinDataset:
                 suffix = s,
                 token = CordraSession.token,
                 verify=False,
-                acls=CordraSession.acl
+                acls=CordraSession.acls
                 )
                 Zeppelin.CordraId.particles[self.hdzclean].append(f"{CordraSession.prefix}/{s}")
             except BaseException as b:
@@ -269,7 +269,7 @@ class Zeppelin:
             suffix = self.suffix,
             token = CordraSession.token,
             verify=False,
-            acls=CordraSession.acl,
+            acls=CordraSession.acls,
             )
         _id = f"{CordraSession.prefix}/{self.suffix}"
         print(f"Succesfully uploaded sample with id {_id}")
@@ -306,7 +306,7 @@ class Zeppelin:
                     suffix = s,
                     token = CordraSession.token,
                     verify=False,
-                    acls=CordraSession.acl,
+                    acls=CordraSession.acls,
                     )
                     self.CordraId.rawparticles.append(f"{CordraSession.prefix}/{s}")
                     bar()
@@ -336,7 +336,7 @@ class Zeppelin:
                         suffix = s,
                         token = CordraSession.token,
                         verify=False,
-                        acls=CordraSession.acl,
+                        acls=CordraSession.acls,
                         )
                     bar()
                     self.CordraId.images.append(f"{CordraSession.prefix}/{s}")
