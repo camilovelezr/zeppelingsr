@@ -400,14 +400,13 @@ class CordraSession:
             password = getpass.getpass("Password: ")
         if prefix == None:
             prefix = input("Enter cordra's prefix: ")
-        if acls:
-            setattr(self, 'acls', acls)
         def _getcordrainfo(self):
             token = cordra.Token.create(host,username,password,verify=False)
             setattr(self, 'token', token)
             setattr(self, 'prefix', prefix)
             setattr(self, 'username', username)
             setattr(self, 'host', host)
+            setattr(self, 'acls', acls)
         _getcordrainfo(self)
     def restore_token(self):
         password = getpass.getpass("Password: ")
