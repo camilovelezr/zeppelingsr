@@ -195,7 +195,6 @@ class ZeppelinDataset:
                 )
                 Zeppelin.CordraId.particles[self.hdzclean].append(f"{CordraSession.prefix}/{s}")
             except BaseException as b:
-                print(f"There was a problem uploading particle {n} of {self.hdz}. See problemparticles.")
                 Zeppelin.problemparticles[f"Particle {n} of {self.hdzclean}"] = (b.response.text).split(":")[1].replace("}", "")
 
 
