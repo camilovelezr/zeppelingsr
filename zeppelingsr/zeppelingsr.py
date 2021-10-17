@@ -148,6 +148,7 @@ class ZeppelinDataset:
         r = json.loads(r)
         return r
 
+
     def json_metadata(self, row): # create JSON of particle with metadata attached
         r = (self.df.iloc[row-1]).to_json(orient = 'columns')
         r = json.loads(r)
@@ -176,8 +177,8 @@ class ZeppelinDataset:
         if maxim==None:
             num = len(Zeppelin._datahdz.df)
         else:
-            num = maxim
-            df_up = self.df[self.df["NUMBER"]<=num]    
+            self.df_up = self.df[self.df["NUMBER"]<=maxim]
+            num = len(self.df_up)
         for x in range(1, num+1):
             try:
                 r = self.json(x)
@@ -197,7 +198,7 @@ class ZeppelinDataset:
                 Zeppelin.CordraId.particles[self.hdzclean].append(f"{CordraSession.prefix}/{s}")
             except BaseException as b:
                 Zeppelin.problemparticles[f"Particle {n} of {self.hdzclean}"] = (b.response.text).split(":")[1].replace("}", "")
-        Zeppelin.CordraId.particles[self.hdzclean] = set(Zeppelin.CordraId.particles[self.hdzclean])
+        Zeppelin.CordraId.particles[self.hdzclean] = list(set(Zeppelin.CordraId.particles[self.hdzclean]))
 
 
 class Zeppelin:
@@ -354,7 +355,6 @@ class Zeppelin:
         print(f"Succesfully uploaded the reprocessings metadata. \n")
     def upload_particles(self, CordraSession, maxim = None):
         def metadata_haspart(self, CordraSession, ZeppelinDataset):
-            print(self.CordraId.particles[ZeppelinDataset.hdzclean])
             try:
                 response = cordra.CordraObject.update(
                     CordraSession.host,
