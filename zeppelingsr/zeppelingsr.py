@@ -87,7 +87,7 @@ class ZeppelinDataset:
     def __init__(self, hdz):
         self.hdz = hdz
         self.pxz = f"{hdz.replace('.hdz', '.pxz')}"
-        self.df = pd.read_csv(self.pxz, sep = '\t', header=None)
+        self.df = pd.read_csv(self.pxz, sep = '\t', header=None, low_memory=False)
         self.hdzclean = CleanName(self.hdz) # no path, no extension
         with open(hdz, 'r', encoding = 'cp1252') as file:
             h = np.array(file.read().replace('\t \t', '\t 1\t').split())
@@ -127,8 +127,8 @@ class ZeppelinDataset:
                                         'unitText':self.header['PROBE_CURRENT'].split()[1]}
         self.header['WORKING_DISTANCE'] = {'value': float(self.header['WORKING_DISTANCE']),
                                            'unitText': 'mm'}
-        b = pytz.timezone('EST5EDT')
-        x = parse(self.header['ANALYSIS_DATE'] + ' ' +self.header['START_TIME'], tzinfos = {'EDT': b})
+        x = parse(self.header['ANALYSIS_DATE'] + ' ' +self.header['START_TIME'], tzinfos = {'EDT': pytz.timezone('EST5EDT'), "EST":pytz.timezone("EST"),
+                                                                                            "MDT":pytz.timezone("MST7MDT"), "MST":pytz.timezone("MST")})
         self.header['DATETIME'] = x.astimezone(pytz.utc).isoformat()
         # Mapping MAG0 and MAG_FMT as key value pairs
         self.header[self.header['MAG_FMT'].split()[0].upper()+'_DATA'] = {'value': float(self.header['MAG0'].split()[0]), 'unitText': 'Assuming a 3.5 in field of view'}
@@ -177,6 +177,7 @@ class ZeppelinDataset:
             num = len(Zeppelin._datahdz.df)
         else:
             num = maxim
+            df_up = self.df[self.df["NUMBER"]<=num]    
         for x in range(1, num+1):
             try:
                 r = self.json(x)
@@ -196,6 +197,7 @@ class ZeppelinDataset:
                 Zeppelin.CordraId.particles[self.hdzclean].append(f"{CordraSession.prefix}/{s}")
             except BaseException as b:
                 Zeppelin.problemparticles[f"Particle {n} of {self.hdzclean}"] = (b.response.text).split(":")[1].replace("}", "")
+        Zeppelin.CordraId.particles[self.hdzclean] = set(Zeppelin.CordraId.particles[self.hdzclean])
 
 
 class Zeppelin:
@@ -352,15 +354,19 @@ class Zeppelin:
         print(f"Succesfully uploaded the reprocessings metadata. \n")
     def upload_particles(self, CordraSession, maxim = None):
         def metadata_haspart(self, CordraSession, ZeppelinDataset):
-            response = cordra.CordraObject.update(
-                CordraSession.host,
-                obj_id = f"{self.CordraId.metadata[ZeppelinDataset.hdzclean]}",
-                obj_json=self.CordraId.particles[ZeppelinDataset.hdzclean],
-                jsonPointer="/hasPart",
-                token = CordraSession.token,
-                verify = False,
-                full = True
-            )
+            print(self.CordraId.particles[ZeppelinDataset.hdzclean])
+            try:
+                response = cordra.CordraObject.update(
+                    CordraSession.host,
+                    obj_id = f"{self.CordraId.metadata[ZeppelinDataset.hdzclean]}",
+                    obj_json=self.CordraId.particles[ZeppelinDataset.hdzclean],
+                    jsonPointer="/hasPart",
+                    token = CordraSession.token,
+                    verify = False,
+                    full = True
+                )
+            except BaseException as e:
+                print(f"Problem with {self.CordraId.metadata[ZeppelinDataset.hdzclean]}. Problem is {e}")
         if maxim==None:
             count = self.nparticles
         else:
