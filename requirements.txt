@@ -6,7 +6,7 @@ CordraPy==0.3.2
 decorator==4.4.2
 idna==2.8
 lucene-querybuilder==0.2
-numpy==1.20.3
+numpy==1.22.0
 pandas==1.2.4
 parso==0.7.0
 periodictable==1.6.0
